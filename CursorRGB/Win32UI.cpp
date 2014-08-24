@@ -10,6 +10,7 @@ Win32UI::Win32UI():
 	hWindow_(NULL),
 	hWindowThread_(NULL),
 	hStaticText_(NULL),
+	hScreenDC_(NULL),
 	dwWindowThreadID_(0){
 
  }
@@ -60,16 +61,24 @@ DWORD WINAPI Win32UI::windowThreadFunc(LPVOID lpParam ){
 void Win32UI::onPaintMessage(HWND hWnd, POINT point){
 
 	  LOG(LS_INFO)<<"onPaintMessage: "<<hWnd<<" "<<point.x<<point.y;
-		std::string pointStr;
-	  std::wstring stemp;
+		std::wstring stemp;
 		LPCWSTR sw;
+		COLORREF color;
+		BYTE R, G, B;
 
-		pointStr = SSTR( "x: " << point.x << ", y: " << point.y);
+		hScreenDC_ = GetDC(NULL); // GET SCREEN DC
+		color = GetPixel(hScreenDC_, point.x, point.y);
+		R = GetRValue(color);
+		G = GetGValue(color);
+		B = GetBValue(color);
+
+		char rgbString[20];
+		sprintf(rgbString,"R:%d, G:%d, B:%d",R,G,B);
+		std::string pointStr(rgbString);
+	  
 		LOG(LS_INFO)<<"WINDOW point: "<<pointStr;
-
 		stemp = std::wstring(pointStr.begin(), pointStr.end());
 		sw = stemp.c_str();
-
 		SetWindowText( hStaticText_, sw);
 }
 

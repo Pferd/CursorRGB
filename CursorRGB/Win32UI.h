@@ -32,6 +32,7 @@ private:
 	 HANDLE hWindowThread_;
 	 DWORD dwWindowThreadID_;
 	 HWND hStaticText_;
+	 HDC hScreenDC_;
 };
 
 #endif
