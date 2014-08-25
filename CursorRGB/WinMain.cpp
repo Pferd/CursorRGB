@@ -21,90 +21,91 @@ HINSTANCE hInst;
 
 
 int WINAPI WinMain(HINSTANCE hInstance,
-                   HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine,
-                   int nCmdShow)
+									 HINSTANCE hPrevInstance,
+									 LPSTR lpCmdLine,
+									 int nCmdShow)
 {
-   
-    /// Store instance handle in our global variable
-	  hInst = hInstance; 
-	
-		/// Setup the Logging Framework (from WebRTC native stack).
-		SetupLogging();
-		
-		/// setup the UI and Hook instance
-		Win32UI win32UI;
-		MouseHook mouseHook;
-		
-		/// start the win32UI
-		win32UI.start();
 
-		/// Exchage the information for the
-		/// hook to pass the information.
+	/// Store instance handle in our global variable
+	hInst = hInstance; 
 
-		mouseHook.SetWindowID(win32UI.GetWindowThreadID());
-		mouseHook.SetWindowHandle(win32UI.GetWindowHandle());
-		
-		/// Start the Hook thread, this will start pumping
-		//// mouse messsages to windows UI thread.
+	/// Setup the Logging Framework (from WebRTC native stack).
+	SetupLogging();
 
-		mouseHook.start();
+	/// setup the UI and Hook instance
+	Win32UI win32UI;
+	MouseHook mouseHook;
 
-		/// Wait for the window thread to terminate.
-		/// Upon the window thread termination close
-		/// the hook and exit. Destructors should take 
-		/// care of resource de-allocation.
+	/// start the win32UI
+	win32UI.start();
 
-		WaitForSingleObject(win32UI.GetThreadHandle(), INFINITE);
-		
-		return 1;
+	/// Exchage the information for the
+	/// hook to pass the information.
+
+	mouseHook.SetWindowID(win32UI.GetWindowThreadID());
+	mouseHook.SetWindowHandle(win32UI.GetWindowHandle());
+
+	/// Start the Hook thread, this will start pumping
+	//// mouse messsages to windows UI thread.
+
+	mouseHook.start();
+	win32UI.SetMouseHookThreadID(mouseHook.GetMouseHookThreadID());
+
+	/// Wait for the window thread to terminate.
+	/// Upon the window thread termination close
+	/// the hook and exit. Destructors should take 
+	/// care of resource de-allocation.
+
+	WaitForSingleObject(win32UI.GetThreadHandle(), INFINITE);
+
+	return 1;
 }
 
 
 
 talk_base::StreamInterface* InitLogStream(char *logPrefix)
 {
-   SYSTEMTIME sysTime;
-   GetSystemTime(&sysTime);
+	SYSTEMTIME sysTime;
+	GetSystemTime(&sysTime);
 
-   char fName[256];
+	char fName[256];
 
-   sprintf(fName, "%s%d_%d_%d%s", logPrefix, 
-           sysTime.wHour+5,sysTime.wMinute+30,sysTime.wSecond,".log");
+	sprintf(fName, "%s%d_%d_%d%s", logPrefix, 
+		sysTime.wHour+5,sysTime.wMinute+30,sysTime.wSecond,".log");
 
-   talk_base::Pathname logfilepath = talk_base::Pathname(fName);
-   talk_base::StreamInterface* logStream = NULL;
-   
-   logStream = (talk_base::StreamInterface* )talk_base::Filesystem::OpenFile( logfilepath, "w");
+	talk_base::Pathname logfilepath = talk_base::Pathname(fName);
+	talk_base::StreamInterface* logStream = NULL;
 
-   talk_base::LogMessage::LogThreads();
-   talk_base::LogMessage::LogTimestamps();
+	logStream = (talk_base::StreamInterface* )talk_base::Filesystem::OpenFile( logfilepath, "w");
 
-   talk_base::LoggingSeverity logLvl = talk_base::LS_INFO;
-   talk_base::LogMessage::LogContext(logLvl);
-   talk_base::LogMessage::LogThreads();
-   talk_base::LogMessage::LogTimestamps();
-   return logStream;
+	talk_base::LogMessage::LogThreads();
+	talk_base::LogMessage::LogTimestamps();
+
+	talk_base::LoggingSeverity logLvl = talk_base::LS_INFO;
+	talk_base::LogMessage::LogContext(logLvl);
+	talk_base::LogMessage::LogThreads();
+	talk_base::LogMessage::LogTimestamps();
+	return logStream;
 }
 
 
 BOOLEAN SetupLogging(){
-	
-	 talk_base::LogMessage::LogToDebug(talk_base::LS_INFO);
-	 talk_base::StreamInterface* stream = InitLogStream( "c:\\Logs\\cursorRGB" );
 
-    if (stream) {
+	talk_base::LogMessage::LogToDebug(talk_base::LS_INFO);
+	talk_base::StreamInterface* stream = InitLogStream( "c:\\Logs\\cursorRGB" );
 
-      talk_base::LogMessage::LogToStream(stream, talk_base::LS_INFO);
-      LOG(LS_VERBOSE) << "Logging Init - VERBOSE";
-      LOG(LS_INFO) << "Logging Init - INFO";
-      stream->Flush();
-			return TRUE;
+	if (stream) {
 
-    } else {
+		talk_base::LogMessage::LogToStream(stream, talk_base::LS_INFO);
+		LOG(LS_VERBOSE) << "Logging Init - VERBOSE";
+		LOG(LS_INFO) << "Logging Init - INFO";
+		stream->Flush();
+		return TRUE;
 
-			MessageBox((HWND)hInst, L"Debug log setup ERROR",L"Failure", MB_ICONERROR);
-      return FALSE;
-    }
-  
+	} else {
+
+		MessageBox((HWND)hInst, L"Debug log setup ERROR",L"Failure", MB_ICONERROR);
+		return FALSE;
+	}
+
 }

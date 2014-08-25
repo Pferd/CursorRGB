@@ -25,14 +25,16 @@ class Win32UI{
 		void	 start();
 		void   onPaintMessage(HWND hWnd, POINT point);
 		HWND	 GetWindowHandle(){return hWindow_;}
+		void   SetMouseHookThreadID(DWORD dwMouseHookThreadId){dwWindowThreadID_ = dwMouseHookThreadId;}
 
 private:
 	 WNDCLASSEX wcex_;
 	 HWND hWindow_;
 	 HANDLE hWindowThread_;
 	 DWORD dwWindowThreadID_;
-	 HWND hStaticText_;
 	 HDC hScreenDC_;
+	 static HWND hStaticText_;
+	 static DWORD dwMouseHookThreadId_;
 };
 
 #endif
