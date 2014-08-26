@@ -37,12 +37,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	MouseHook mouseHook;
 
 	/// start the win32UI
-	win32UI.start();
+	if(!win32UI.start()){
+		MessageBox(NULL,L"Unable to start the window", L"failure", MB_ICONERROR);
+	}
 
 	/// Exchage the information for the
 	/// hook to pass the information.
-
-	mouseHook.SetWindowID(win32UI.GetWindowThreadID());
 	mouseHook.SetWindowHandle(win32UI.GetWindowHandle());
 
 	/// Start the Hook thread, this will start pumping
@@ -51,12 +51,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	mouseHook.start();
 	win32UI.SetMouseHookThreadID(mouseHook.GetMouseHookThreadID());
 
+	win32UI.messageHandler();
 	/// Wait for the window thread to terminate.
 	/// Upon the window thread termination close
 	/// the hook and exit. Destructors should take 
 	/// care of resource de-allocation.
-
-	WaitForSingleObject(win32UI.GetThreadHandle(), INFINITE);
 
 	return 1;
 }
@@ -97,7 +96,6 @@ BOOLEAN SetupLogging(){
 	if (stream) {
 
 		talk_base::LogMessage::LogToStream(stream, talk_base::LS_INFO);
-		LOG(LS_VERBOSE) << "Logging Init - VERBOSE";
 		LOG(LS_INFO) << "Logging Init - INFO";
 		stream->Flush();
 		return TRUE;

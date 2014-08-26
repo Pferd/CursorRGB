@@ -2,12 +2,13 @@
 
 MouseHook* MouseHook::pMouseHook_ = NULL;
 DWORD			 MouseHook::dwUIThreadID_ = 0;
+HWND			 MouseHook::windowHandle_ = NULL;
+
 
 MouseHook::MouseHook()
 	:hMouseHook_(NULL),
 	hMouseThread_(NULL),
 	dwMouseThreadID_(0),
-	windowHandle_(NULL),
 	hInstance_(GetModuleHandle(NULL))
 {
 
@@ -97,7 +98,11 @@ LRESULT CALLBACK MouseHook::lowMouseHookProc(int nCode, WPARAM wParam, LPARAM lP
 	if(pMouseHook_== NULL) // No Point in going down, give it to the hook chain.
 		return ::CallNextHookEx(pMouseHook_->GetMSHookHndl(), nCode, wParam, lParam);
 
-	pMouseHook_->OnMouseMessage(pMouseMsg);
+	// call the on mouse message only on mouse move event.
+	if(wParam==WM_MOUSEMOVE){
+		LOG(LS_INFO)<<"+MouseMove fired";
+		pMouseHook_->OnMouseMessage(pMouseMsg);
+	}
 
 	if (nCode < 0 || nCode == HC_NOREMOVE){
 		return ::CallNextHookEx(pMouseHook_->GetMSHookHndl(), nCode, wParam, lParam);
@@ -122,8 +127,10 @@ void MouseHook::OnMouseMessage(MSLLHOOKSTRUCT* pMouseHookStruct){
 	memcpy(pPoint, &pMouseHookStruct->pt, sizeof(POINT));
 
 	LOG(LS_INFO)<<"POINT onMouseMessage: "<<pPoint->x<<", "<<pPoint->y<<", to Thread: "<<dwUIThreadID_;
-	PostThreadMessage(dwUIThreadID_, WM_MOUSE_MESSAGE, WM_COMMAND, (LPARAM)pPoint);
-
+	// post message, so it donest clog the call back handler.
+	// Its okay, if the UI is little delayed.
+	LOG(LS_INFO)<<"WINDOW HANDLE"<<windowHandle_;
+	SendMessage(windowHandle_, WM_MOUSE_MESSAGE, NULL, (LPARAM)pPoint);
 }
 
 bool MouseHook::setupHook(){

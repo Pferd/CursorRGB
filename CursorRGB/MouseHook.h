@@ -13,7 +13,7 @@ public:
 	 MouseHook();
 	~MouseHook();
 	 MouseHook* GetInstance();
-	 HHOOK GetMSHookHndl(){return hMouseHook_;}
+	 HHOOK	GetMSHookHndl(){return hMouseHook_;}
 	 HANDLE GetMouseHookThread(){return hMouseThread_;}
 	 DWORD	GetMouseHookThreadID(){return dwMouseThreadID_;}
 	 VOID		SetWindowID(DWORD windowThreadID){dwUIThreadID_ = windowThreadID;}
@@ -29,7 +29,7 @@ private:
 
 	 // Member Variables //
 	 HHOOK hMouseHook_;
-	 HWND windowHandle_;
+	 static HWND windowHandle_;
 	 HANDLE hMouseThread_;
 	 DWORD	dwMouseThreadID_;
 	 HINSTANCE hInstance_;

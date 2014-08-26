@@ -17,24 +17,19 @@ class Win32UI{
 	  bool	 setupWindow();
 		bool	 constructWindow();
 		static LRESULT CALLBACK wndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-		static DWORD WINAPI windowThreadFunc( LPVOID lpParam );
 		void   messageHandler();
-		DWORD  GetWindowThreadID(){return dwWindowThreadID_;}
-		HANDLE GetThreadHandle(){return hWindowThread_;}	
 		void   cleanup();
-		void	 start();
-		void   onPaintMessage(HWND hWnd, POINT point);
+		BOOLEAN	start();
 		HWND	 GetWindowHandle(){return hWindow_;}
 		void   SetMouseHookThreadID(DWORD dwMouseHookThreadId){dwWindowThreadID_ = dwMouseHookThreadId;}
 
 private:
 	 WNDCLASSEX wcex_;
 	 HWND hWindow_;
-	 HANDLE hWindowThread_;
-	 DWORD dwWindowThreadID_;
-	 HDC hScreenDC_;
+	 static HDC hScreenDC_; // makes it fast
 	 static HWND hStaticText_;
 	 static DWORD dwMouseHookThreadId_;
+	 DWORD  dwWindowThreadID_;
 };
 
 #endif

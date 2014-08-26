@@ -8,11 +8,10 @@
 
 HWND Win32UI::hStaticText_ = NULL;
 DWORD Win32UI::dwMouseHookThreadId_ = 0;
+HDC		Win32UI::hScreenDC_ = NULL;
+
 
 Win32UI::Win32UI():
-	hWindow_(NULL),
-	hWindowThread_(NULL),
-	hScreenDC_(NULL),
 	dwWindowThreadID_(0){
 
 }
@@ -21,24 +20,16 @@ Win32UI::~Win32UI(){
 
 }
 
-void Win32UI::start(){
+BOOLEAN Win32UI::start(){
 
-	hWindowThread_ = CreateThread( 
-		NULL,                           // default security attributes
-		0,                              // use default stack size  
-		Win32UI::windowThreadFunc,      // thread function name
-		this,										        // argument to thread function 
-		0,                              // use default creation flags 
-		&dwWindowThreadID_);            // returns the thread identifier 
+	
+	if(!setupWindow())
+		return FALSE;
 
-	if(!hWindowThread_){
-		MessageBox(NULL,
-			_T("Failed to create window UI thread"),
-			_T("Cursor RGB App"),
-			NULL);	
-	}
+	if(!constructWindow())
+		return FALSE;
 
-
+	return TRUE;
 }
 
 void Win32UI::cleanup(){
@@ -46,67 +37,19 @@ void Win32UI::cleanup(){
 
 }
 
-DWORD WINAPI Win32UI::windowThreadFunc(LPVOID lpParam ){
-
-	Win32UI* win32UI = (Win32UI*)lpParam;
-
-	if(!win32UI->setupWindow())
-		return 0;
-
-	if(!win32UI->constructWindow())
-		return 0;
-
-	win32UI->messageHandler(); // Runs indefinately.
-}
-
-
-void Win32UI::onPaintMessage(HWND hWnd, POINT point){
-
-	LOG(LS_INFO)<<"onPaintMessage: "<<hWnd<<" "<<point.x<<point.y;
-	std::wstring stemp;
-	LPCWSTR sw;
-	COLORREF color;
-	BYTE R, G, B;
-
-	hScreenDC_ = GetDC(NULL); // GET SCREEN DC
-	color = GetPixel(hScreenDC_, point.x, point.y);
-	R = GetRValue(color);
-	G = GetGValue(color);
-	B = GetBValue(color);
-
-	char rgbString[20];
-	sprintf(rgbString,"R:%d, G:%d, B:%d",R,G,B);
-	std::string pointStr(rgbString);
-
-	LOG(LS_INFO)<<"WINDOW point: "<<pointStr;
-	stemp = std::wstring(pointStr.begin(), pointStr.end());
-	sw = stemp.c_str();
-	SetWindowText( hStaticText_, sw);
-	ReleaseDC(NULL, hScreenDC_);
-}
-
 void Win32UI::messageHandler(){
 
 	/* start message loop */
 	MSG msg;
 
-	while (GetMessage(&msg, NULL, 0, 0))
+	while (GetMessage(&msg, hWindow_, 0, 0))
 	{
 
-		if (msg.message == WM_MOUSE_MESSAGE)         
-		{
-			POINT* point = reinterpret_cast<POINT*>(msg.lParam);
-			LOG(LS_INFO)<<"+WM_MOUSE_MESSAGE"<<", x: "<<point->x<<", y: "<<point->y;
-			onPaintMessage(GetWindowHandle(), *point);
-			delete point; //FREE up the memory for the point variable.
-		}
-
-		TranslateMessage(&msg); 
-		DispatchMessage(&msg);
+			TranslateMessage(&msg); 
+			DispatchMessage(&msg);
+	
 	}
-
 }
-
 bool Win32UI::setupWindow(){
 
 	wcex_.cbSize				 = sizeof(WNDCLASSEX);
@@ -116,7 +59,7 @@ bool Win32UI::setupWindow(){
 	wcex_.cbWndExtra     = 0;
 	wcex_.hInstance      = GetModuleHandle(NULL);
 	wcex_.hIcon          = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_APPLICATION));
-	wcex_.hCursor        = LoadCursor(NULL, IDC_ARROW);
+	wcex_.hCursor        = LoadCursor(GetModuleHandle(NULL), IDC_ARROW);
 	wcex_.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
 	wcex_.lpszMenuName   = NULL;
 	wcex_.lpszClassName  = szWindowClass;
@@ -233,14 +176,47 @@ LRESULT CALLBACK Win32UI::wndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		}
 
 	case WM_DESTROY:
-
+	
 		if(dwMouseHookThreadId_!=0)
 			PostThreadMessage(dwMouseHookThreadId_, WM_STOP_HOOK, WM_COMMAND, NULL);
 		else
 			LOG(LS_WARNING)<<"UNABLE TO SEND STOP HOOK MSG, NULL Thread ID";
 
 		PostQuitMessage(0);
+		break;
 
+	case WM_MOUSE_MESSAGE:
+	{
+			POINT* point = reinterpret_cast<POINT*>(lParam);
+			LOG(LS_VERBOSE)<<"+WM_MOUSE_MESSAGE"<<", x: "<<point->x<<", y: "<<point->y;
+			
+			std::wstring stemp;
+			LPCWSTR sw;
+			COLORREF color;
+			BYTE R, G, B;
+
+			hScreenDC_ = GetDC(NULL);
+			// TBD: Perform sanity check for point, should not be
+			// greater than the screen resoulution and less than 0.
+			color = GetPixel(hScreenDC_, point->x, point->y);
+			R = GetRValue(color);
+			G = GetGValue(color);
+			B = GetBValue(color);
+
+			char rgbString[20];
+			sprintf(rgbString,"R:%d, G:%d, B:%d",R,G,B);
+			std::string pointStr(rgbString);
+
+			LOG(LS_VERBOSE)<<"WINDOW point: "<<pointStr;
+			stemp = std::wstring(pointStr.begin(), pointStr.end());
+			sw = stemp.c_str();
+			SetWindowText(hStaticText_, sw);
+			ReleaseDC(NULL, hScreenDC_);
+		}
+			break;
+	
+	case WM_CLOSE:
+		PostQuitMessage(0);
 		break;
 
 	default:
